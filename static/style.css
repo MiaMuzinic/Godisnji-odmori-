@@ -1,0 +1,179 @@
+:root{
+  --card-bg: #ffffff;
+  --page-bg: #e8f0ff;
+  --accent: #3f6ff2;
+  --accent-light: #5f8bff;
+  --accent-dark: #2d56d6;
+  --muted: #5c6b89;
+  --border: #d9e2ff;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  min-height:100vh;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  font-family: "Segoe UI", Roboto, Arial, sans-serif;
+  background:linear-gradient(135deg, #e7efff, #cddaff);
+  padding:40px 16px;
+}
+
+/* ------- CARD / CONTAINER ------- */
+.form-container{
+  width:100%;
+  max-width:700px;
+  background:var(--card-bg);
+  border-radius:16px;
+  box-shadow:0 10px 40px rgba(50,70,150,0.15);
+  padding:40px 42px;
+  border:1px solid var(--border);
+  animation: fadeIn 0.4s ease;
+  position: relative; /* potrebno za apsolutno pozicioniranje loga */
+}
+
+@keyframes fadeIn {
+  from {opacity:0; transform:translateY(10px);}
+  to {opacity:1; transform:translateY(0);}
+}
+
+/* ------- LOGO ------- */
+.logo {
+  position: absolute;
+  bottom:16px; /* donji kut */
+  left:16px;   /* lijevi kut */
+  width:50px;
+  height:50px;
+  opacity:0.15; /* prozirnost za watermark efekt */
+  object-fit: contain;
+  pointer-events: none; /* da logo ne smeta klikovima po formi */
+}
+
+h2{
+  margin:0 0 16px;
+  font-size:24px;
+  color:#222;
+  text-align:center;
+  font-weight:700;
+}
+
+/* ------- FIELDS ------- */
+label{
+  display:block;
+  font-weight:600;
+  margin-bottom:6px;
+  color:var(--muted);
+}
+
+.field-row{
+  display:flex;
+  gap:16px;
+  margin-bottom:18px;
+}
+
+.field-col{
+  flex:1;
+}
+
+input[type="text"], select{
+  width:100%;
+  padding:12px 14px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  font-size:15px;
+  background:#f9fbff;
+  transition:0.15s;
+}
+
+input[type="text"]:focus, select:focus{
+  outline:none;
+  box-shadow:0 0 0 5px rgba(80,120,255,0.12);
+  border-color:var(--accent);
+}
+
+/* ------- WEEK LIST ------- */
+h3{
+  margin-top:28px;
+  margin-bottom:10px;
+  color:#1d2a50;
+  font-size:18px;
+  font-weight:700;
+}
+
+.weeks-grid{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  max-height:420px;
+  overflow:auto;
+  padding-right:8px;
+  border-radius:10px;
+}
+
+.week-item{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  background:linear-gradient(135deg, #f2f6ff, #e8efff);
+  border:1px solid var(--border);
+  padding:12px 14px;
+  border-radius:10px;
+  cursor:pointer;
+  transition:0.2s;
+}
+
+.week-item:hover{
+  background:#e0e8ff;
+  border-color:#b9c9ff;
+}
+
+.week-item.disabled{
+  opacity:0.45;
+  background:#f4f4f4;
+  border-color:#ddd;
+  cursor:not-allowed;
+}
+
+.week-item input[type="checkbox"]{
+  width:18px;
+  height:18px;
+}
+
+.week-label{
+  font-size:15px;
+  color:#1b1b1b;
+}
+
+/* ------- BUTTON ------- */
+.submit-btn{
+  margin-top:26px;
+  width:100%;
+  padding:14px;
+  border-radius:12px;
+  border:none;
+  background:var(--accent);
+  color:#fff;
+  font-weight:700;
+  cursor:pointer;
+  font-size:16px;
+  transition:0.2s;
+}
+
+.submit-btn:hover{
+  background:var(--accent-dark);
+  box-shadow:0 6px 16px rgba(30,60,160,0.25);
+}
+
+/* ------- RESPONSIVE ------- */
+@media (max-width:560px){
+  .form-container{
+    padding:26px;
+  }
+  .field-row{
+    flex-direction:column;
+  }
+}

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Godišnji odmori – Forma</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+  <div class="form-container">
+    <h2>Godišnji odmori</h2>
+
+    <form id="workForm" method="POST" action="{{ url_for('submit') }}">
+
+      <div class="field-row">
+        <div class="field-col">
+          <label for="ime">Ime</label>
+          <input type="text" id="ime" name="ime" required>
+        </div>
+
+        <div class="field-col">
+          <label for="prezime">Prezime</label>
+          <input type="text" id="prezime" name="prezime" required>
+        </div>
+      </div>
+
+      <!-- RESTORAN -->
+      <label for="restoran">Restoran</label>
+      <select id="restoran" name="restoran" required>
+        <option value="">-- Odaberi restoran --</option>
+        <option value="Kampus">Restoran Kampus</option>
+        <option value="Index">Restoran Index</option>
+        <option value="SOS">Restoran SOS</option>
+        <option value="MEFST">Restoran MEFST</option>
+        <option value="STOP">Restoran STOP</option>
+        <option value="FGAG">Restoran FGAG</option>
+        <option value="Ekonomija">Restoran Ekonomija</option>
+        <option value="BB">Restoran BB</option>
+        <option value="Spinut">Restoran Spinut</option>
+      </select>
+
+      <br><br>
+      <!-- POZICIJA -->
+      <label for="pozicija">Pozicija</label>
+      <select id="pozicija" name="pozicija" required>
+        <option value="">-- Prvo odaberi restoran --</option>
+      </select>
+
+      <h3>Odaberi tjedne:</h3>
+      <div class="weeks-grid">
+        {% for week in weeks %}
+          <label class="week-item">
+            <input type="checkbox" name="weeks" value="{{ week }}">
+            <span class="week-label">{{ week }}</span>
+          </label>
+        {% endfor %}
+      </div>
+
+      <button type="submit" class="submit-btn">Pošalji</button>
+    </form>
+  </div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
