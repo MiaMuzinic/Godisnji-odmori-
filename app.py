@@ -1,17 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-
 import os
 import json
-
-cred_data = json.loads(os.environ["GOOGLE_CREDS"])
-
-scope = ["https://spreadsheets.google.com/feeds",
-         "https://www.googleapis.com/auth/drive"]
-
-creds = ServiceAccountCredentials.from_json_keyfile_dict(cred_data, scope)
-client = gspread.authorize(creds)
 
 app = Flask(__name__)
 
@@ -55,9 +46,15 @@ LIMITS = {
 # ----- GOOGLE SHEETS SETUP -----
 
 def google_client():
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+    scope = ["https://spreadsheets.google.com/feeds",
+             "https://www.googleapis.com/auth/drive"]
+
+    # 🔥 koristi ENV varijablu umjesto credentials.json
+    cred_data = json.loads(os.environ["GOOGLE_CREDS"])
+
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(cred_data, scope)
     return gspread.authorize(creds)
+
 
 def get_sheet(restoran):
     client = google_client()
