@@ -1,32 +1,32 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-import os
-import json
-import datetime
+import os, json, datetime
 
 app = Flask(__name__)
 
-# -------- GENERIRANJE TJEDANA 2026 --------
+# ------------------ GENERIRANJE TJEDANA ------------------
+
 def generate_weeks(year=2026):
     weeks = []
     date = datetime.date(year, 1, 1)
 
-    while date.weekday() != 0:
+    while date.weekday() != 0:  # ponedjeljak
         date += datetime.timedelta(days=1)
 
     while date.year == year:
         start = date
         end = date + datetime.timedelta(days=6)
-        week_str = f"{start.strftime('%d.%m.')}-{end.strftime('%d.%m.')}"
-        weeks.append(week_str)
+        weeks.append(f"{start.strftime('%d.%m.')}-{end.strftime('%d.%m.')}")
         date += datetime.timedelta(days=7)
 
     return weeks
 
 weeks = generate_weeks()
 
-# -------- LIMITI --------
+
+# ------------------ LIMTI ------------------
+
 LIMITS = {
     "Kampus": {"Poslovođa": 3, "Kuhar": 14, "Konobar": 13, "Pomoćni radnik": 12, "Slastičar": 3, "Blagajnik": 2, "Skladištar": 1},
     "Index": {"Voditelj": 1, "Poslovođa": 1, "Šef smjene": 1, "Blagajnik": 1, "Konobar": 1, "Kuhar": 2, "Pomoćni radnik": 3},
@@ -39,60 +39,71 @@ LIMITS = {
     "Spinut": {"Voditelj": 1, "Poslovođa": 1, "Kuhar": 4, "Blagajnik": 1, "Konobar": 1, "Pomoćni radnik": 3}
 }
 
-# -------- GOOGLE AUTH --------
+
+# ------------------ GOOGLE SETUP ------------------
+
 def google_client():
-    scope = [
-        "https://spreadsheets.google.com/feeds",
-        "https://www.googleapis.com/auth/drive"
-    ]
-    cred_data = json.loads(os.environ["GOOGLE_CREDS"])
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(cred_data, scope)
+    scope = ["https://spreadsheets.google.com/feeds",
+             "https://www.googleapis.com/auth/drive"]
+
+    creds = json.loads(os.environ["GOOGLE_CREDS"])
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds, scope)
     return gspread.authorize(creds)
+
 
 def get_sheet(restoran):
     client = google_client()
     doc = client.open_by_key("16X-Fbzm9iP74RzGNPOWS19AwnBL4D7Is3gfu9rDRVz4")
 
     try:
-        sheet = doc.worksheet(restoran)
+        return doc.worksheet(restoran)
     except gspread.WorksheetNotFound:
-        sheet = doc.add_worksheet(title=restoran, rows="2000", cols=str(4 + len(weeks)))
+        sheet = doc.add_worksheet(title=restoran, rows="1000", cols=str(4 + len(weeks)))
         sheet.append_row(["Ime", "Prezime", "Restoran", "Pozicija"] + weeks)
+        return sheet
 
-    return sheet
 
 def get_global_sheet():
     client = google_client()
     doc = client.open_by_key("16X-Fbzm9iP74RzGNPOWS19AwnBL4D7Is3gfu9rDRVz4")
 
     try:
-        sheet = doc.worksheet("GO2026")
+        return doc.worksheet("GO2026")
     except gspread.WorksheetNotFound:
         sheet = doc.add_worksheet(title="GO2026", rows="2000", cols=str(4 + len(weeks)))
         sheet.append_row(["Ime", "Prezime", "Restoran", "Pozicija"] + weeks)
+        return sheet
 
-    return sheet
 
-# -------- FUNKCIJA: IZRAČUN POPUNJENOSTI IZ SHEETA --------
-def load_popunjenost(restoran, pozicija):
+# ------------------ API ZA STATUS POPUNJENOSTI ------------------
+
+@app.route("/status")
+def status():
+    restoran = request.args.get("restoran")
+    pozicija = request.args.get("pozicija")
+
+    if not restoran or not pozicija:
+        return jsonify({})
+
+    limit = LIMITS[restoran][pozicija]
+
     sheet = get_sheet(restoran)
-    records = sheet.get_all_records()
+    data = sheet.get_all_records()
 
-    counts = {week: 0 for week in weeks}
+    counts = {w: 0 for w in weeks}
 
-    for row in records:
-        if row.get("Pozicija") == pozicija:
-            for week in weeks:
-                if str(row.get(week)).strip() == "1":
-                    counts[week] += 1
+    for row in data:
+        if row["Pozicija"] == pozicija:
+            for w in weeks:
+                if str(row.get(w, "")).strip() == "1":
+                    counts[w] += 1
 
-    return counts
+    full_weeks = [w for w in weeks if counts[w] >= limit]
 
-# -------- ROUTES --------
+    return jsonify({"full": full_weeks})
 
-@app.route("/")
-def index():
-    return render_template("index.html", weeks=weeks)
+
+# ------------------ SUBMIT ------------------
 
 @app.route("/submit", methods=["POST"])
 def submit():
@@ -102,30 +113,25 @@ def submit():
     pozicija = request.form.get("pozicija")
     odabrani_tjedni = request.form.getlist("weeks")
 
-    # -------- ČITAMO TRENUTNU POPUNJENOST IZ GOOGLE SHEETSA --------
-    pop = load_popunjenost(restoran, pozicija)
-    limit = LIMITS[restoran][pozicija]
+    sheet = get_sheet(restoran)
+    global_sheet = get_global_sheet()
 
-    # -------- PROVJERA LIMITA --------
-    for week in odabrani_tjedni:
-        if pop[week] >= limit:
-            return f"Tjedan {week} je već popunjen!", 400
-
-    # -------- PRIPREMA RETKA --------
     row = [ime, prezime, restoran, pozicija] + [
         1 if w in odabrani_tjedni else "" for w in weeks
     ]
 
-    # ---- Upis u restoran sheet ----
-    sheet_rest = get_sheet(restoran)
-    sheet_rest.append_row(row)
-
-    # ---- Upis u globalni sheet ----
-    sheet_global = get_global_sheet()
-    sheet_global.append_row(row)
+    sheet.append_row(row)
+    global_sheet.append_row(row)
 
     return redirect(url_for("index"))
 
-# -------- RUN --------
+
+# ------------------ RENDER INDEX ------------------
+
+@app.route("/")
+def index():
+    return render_template("index.html", weeks=weeks)
+
+
 if __name__ == "__main__":
     app.run(debug=True)
