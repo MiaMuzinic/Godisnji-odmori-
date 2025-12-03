@@ -27,10 +27,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // --- 2) UČITAJ POPUNJENOST ---
     async function fetchStatus() {
-        const res = await fetch("/status");
-        globalStatus = await res.json();
-        enforceLimit();
-    }
+    const res = await fetch("/status_all");
+    globalStatus = await res.json();
+    enforceLimit();
+}
+
 
     restoranSelect.addEventListener("change", function () {
         const restoran = restoranSelect.value;
@@ -92,3 +93,4 @@ document.addEventListener("DOMContentLoaded", function () {
     // 🔥 prvo učitaj limite, onda status
     fetchLimits().then(fetchStatus);
 });
+
