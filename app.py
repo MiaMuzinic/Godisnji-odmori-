@@ -80,30 +80,38 @@ def get_global_sheet():
 
 # ------------------ API ZA STATUS POPUNJENOSTI ------------------
 
-@app.route("/status")
-def status():
-    restoran = request.args.get("restoran")
-    pozicija = request.args.get("pozicija")
+@app.route("/status_all")
+def status_all():
+    # rezultat: { restoran: { pozicija: { week: count } } }
+    results = {}
 
-    if not restoran or not pozicija:
-        return jsonify({})
+    client = google_client()
+    doc = client.open_by_key("16X-Fbzm9iP74RzGNPOWS19AwnBL4D7Is3gfu9rDRVz4")
 
-    limit = LIMITS[restoran][pozicija]
+    # sve sheetove čitamo
+    for restoran in LIMITS.keys():
+        try:
+            sheet = doc.worksheet(restoran)
+        except:
+            continue
 
-    sheet = get_sheet(restoran)
-    data = sheet.get_all_records()
+        data = sheet.get_all_records()
 
-    counts = {w: 0 for w in weeks}
+        if restoran not in results:
+            results[restoran] = {}
 
-    for row in data:
-        if row["Pozicija"] == pozicija:
-            for w in weeks:
-                if str(row.get(w, "")).strip() == "1":
-                    counts[w] += 1
+        for pozicija in LIMITS[restoran].keys():
+            results[restoran][pozicija] = {w: 0 for w in weeks}
 
-    full_weeks = [w for w in weeks if counts[w] >= limit]
+        for row in data:
+            pozicija = row["Pozicija"]
+            if pozicija in results[restoran]:
+                for w in weeks:
+                    if str(row.get(w, "")).strip() == "1":
+                        results[restoran][pozicija][w] += 1
 
-    return jsonify({"full": full_weeks})
+    return jsonify(results)
+
 
 
 # ------------------ SUBMIT ------------------
@@ -138,4 +146,5 @@ def index():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
