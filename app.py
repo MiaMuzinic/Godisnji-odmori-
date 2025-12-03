@@ -25,7 +25,10 @@ def generate_weeks(year=2026):
 weeks = generate_weeks()
 
 
-# ------------------ LIMTI ------------------
+@app.route("/limits")
+def limits():
+    return jsonify(LIMITS)
+
 
 LIMITS = {
     "Kampus": {"Poslovođa": 3, "Kuhar": 14, "Konobar": 13, "Pomoćni radnik": 12, "Slastičar": 3, "Blagajnik": 2, "Skladištar": 1},
@@ -135,3 +138,4 @@ def index():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
