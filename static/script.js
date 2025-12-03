@@ -16,15 +16,16 @@ document.addEventListener("DOMContentLoaded", function () {
         "Spinut": ["Voditelj", "Poslovođa", "Kuhar", "Blagajnik", "Konobar", "Pomoćni radnik"]
     };
 
-    const DEFAULT_LIMITS = {
-        "Kuhar": 1,
-        "Pomoćni radnik": 2,
-        "Spremačica": 3,
-        "Recepcija": 1
-    };
-
     let globalStatus = {};
+    let limitMap = {};
 
+    // --- 1) UČITAJ STVARNE LIMITE IZ BACKENDA ---
+    async function fetchLimits() {
+        const res = await fetch("/limits");
+        limitMap = await res.json();
+    }
+
+    // --- 2) UČITAJ POPUNJENOST ---
     async function fetchStatus() {
         const res = await fetch("/status");
         globalStatus = await res.json();
@@ -34,7 +35,6 @@ document.addEventListener("DOMContentLoaded", function () {
     restoranSelect.addEventListener("change", function () {
         const restoran = restoranSelect.value;
 
-        // reset pozicija
         pozicijaSelect.innerHTML = `<option value="">-- Odaberi poziciju --</option>`;
 
         if (restoran) {
@@ -60,6 +60,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    // --- 3) PRAVILNA LOGIKA DISABLE-A ---
     function enforceLimit() {
         const restoran = restoranSelect.value;
         const pozicija = pozicijaSelect.value;
@@ -71,14 +72,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (!restoran || !pozicija) return;
 
+        const realLimit = limitMap[restoran][pozicija];
+
         weekCheckboxes.forEach(cb => {
             const week = cb.value;
-            const limit = DEFAULT_LIMITS[pozicija] || 1;
+            const filled = globalStatus[restoran]?.[pozicija]?.[week] || 0;
 
-            const count =
-                globalStatus[restoran]?.[pozicija]?.[week] || 0;
-
-            if (count >= limit) {
+            if (filled >= realLimit) {
                 cb.disabled = true;
                 cb.parentElement.style.opacity = 0.5;
             }
@@ -89,5 +89,6 @@ document.addEventListener("DOMContentLoaded", function () {
         cb.addEventListener("change", enforceLimit)
     );
 
-    fetchStatus();
+    // 🔥 prvo učitaj limite, onda status
+    fetchLimits().then(fetchStatus);
 });
